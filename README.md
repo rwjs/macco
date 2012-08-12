@@ -33,4 +33,4 @@ NOTES
 TODO
 ======
 
- - Add support for Juniper
+ - Add support for Solaris-style (`0:1:a:2:b:3` -> `00:01:0a:02:0b:03`)
