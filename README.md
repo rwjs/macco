@@ -10,7 +10,7 @@ This script is largely useful for converting MAC addresses so that they can be u
 USAGE:
 ======
 
-Usage: [STDIN] | $0 [OPTIONS]... [MAC-ADDRESS]...
+Usage: [STDIN] | macco.sh [OPTIONS]... [MAC-ADDRESS]...
 
         -a,-A   "Automatic" mode (depends on script defaults)
         -b,-B   Binary style  
@@ -26,9 +26,9 @@ Usage: [STDIN] | $0 [OPTIONS]... [MAC-ADDRESS]...
 NOTES
 ======
 
- - Automatic Mode convert to the default format (defined in the script). If the supplied MAC is in that format, it is converted to the 'automatic' format.
- - MAC address(es) can be supplied either via STDIN (preferred), or as arguments. If both STDIN and arguments are supplied, STDIN is processed first.
- - If no MAC address(es) is supplied, all system MAC addresses are displayed.
+ - Automatic Mode converts MACs to the default format (as defined by "FUNCT"). If the supplied MAC is already in that format, it is converted to the 'automatic' format (as defined by "AUTO_FUNCT").
+ - MAC address(es) can be supplied by STDIN, and/or script arguments. If both STDIN and arguments are supplied, STDIN is processed first.
+ - If no MAC addresses are supplied, all system MAC addresses (excluding loopback) are displayed.
 
 TODO
 ======
