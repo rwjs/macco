@@ -10,9 +10,9 @@ This script is largely useful for converting MAC addresses so that they can be u
 USAGE:
 ======
 
-Usage: [STDIN] | macco.sh [OPTIONS]... [MAC-ADDRESS]...
+Usage: [STDIN] | macco.sh [OPTIONS]... [MAC-ADDRESSES]...
 
-        -a,-A   "Automatic" mode (depends on script defaults)
+        -a,-A   'Automatic' mode (depends on defaults defined in the script)
         -b,-B   Binary style  
         -c,-C   Cisco style ('maca.ddre.sses') (NB: always lowercase)
         -h,-H   Help - display this text and quit.
@@ -20,8 +20,10 @@ Usage: [STDIN] | macco.sh [OPTIONS]... [MAC-ADDRESS]...
         -L      Linux style - uppercase ('MA:CA:DD:RE:SS:ES')
         -n      Naked style - lowercase ('macaddresses')
         -N      Naked style - uppercase ('MACADDRESSES')
-        -p      H(P) style ('macadd-resses')
-        -w      Windows style ('ma-ca-dd-re-ss-es')
+        -p      H(P) style - lowercase ('macadd-resses')
+	-P	H(P) style - uppercase ('MACADD-RESSES')
+        -w      Windows style - lowercase ('ma-ca-dd-re-ss-es')
+        -W      Windows style - uppercase ('MA-CA-DD-RE-SS-ES')
 
 NOTES
 ======
@@ -34,3 +36,4 @@ TODO
 ======
 
  - Add support for Solaris-style (`0:1:a:2:b:3` -> `00:01:0a:02:0b:03`)
+ - Add input verification (possibly allowing for automatic detection and conversion of MAC addresses within larger text)
