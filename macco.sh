@@ -4,30 +4,36 @@
 
 FUNCT=to_linux
 AUTO_FUNCT=to_cisco_lower
-CASE=''
+UPPER_CASE=''
 
 ############################### Create Help text ##############################
 
 HELP="
-Usage: [STDIN] | $0 [OPTIONS]... [MAC-ADDRESS]...
+Usage: [STDIN] | $0 [OPTIONS]... [MAC-ADDRESSES]...
 
-	-a,-A	"Automatic" mode (depends on script defaults)
+	-a,-A	'Automatic' mode (depends on defaults defined in the script)
 	-b,-B	Binary style
 	-c,-C	Cisco style ('maca.ddre.sses') (NB: always lowercase)
 	-h,-H	Help - display this text and quit.
 	-l	Linux style - lowercase	('ma:ca:dd:re:ss:es')
-	-L	Linux style - uppercase	('MA:CA:DD:RE:SS:ES')
+	-L	Linux style - UPPERCASE	('MA:CA:DD:RE:SS:ES')
 	-n	Naked style - lowercase	('macaddresses')
-	-N	Naked style - uppercase	('MACADDRESSES')
-	-p	H(P) style ('macadd-resses')
-	-w	Windows style ('ma-ca-dd-re-ss-es')
+	-N	Naked style - UPPERCASE	('MACADDRESSES')
+	-p	H(P) style - lowercase ('macadd-resses')
+	-P	H(P) style - UPPERCASE ('MACADD-RESSES')
+	-s	Solaris style - lowercase ('50:1A:12:14:a:b')
+	-S	Solaris style - UPPERCASE ('50:1A:12:15:A:B')
+	-w	Windows style - lowercase ('ma-ca-dd-re-ss-es')
+	-W	Windows style - UPPERCASE ('MA-CA-DD-RE-SS-ES')
 
 Notes: 
- - Automatic Mode convert to the default format (defined in the script). 
-    If the supplied MAC is in that format, it is converted to the 'automatic' format.
+ - Automatic Mode converts to the 'default' format (as defined by "FUNCT"). 
+    If the supplied MAC is already in that format, it is converted to the 
+    'automatic' format (defined by "AUTO_FUNCT")
  - MAC address(es) can be supplied by STDIN, and/or script arguments.
     If both STDIN and arguments are supplied, STDIN is processed first.
- - If no MAC address(es) is supplied, all system MAC addresses are displayed.
+ - If no MAC addresses are supplied, all system MAC addresses 
+    (excluding loopback) are displayed.
 "
 
 ######################### Define Conversion Functions #########################
@@ -66,6 +72,11 @@ function to_naked
 {
 	# Naked-style: macaddresses / MACADDRESSES
 	echo $@ | tr -d '\:\-\.'
+}
+
+function to_solaris
+{
+	sed 's/../:&/g;s/:0/:/g;s/^://' <<< $@
 }
 
 function to_binary_ignore
@@ -146,7 +157,7 @@ function convert
 
 SHIFT=0
 
-while getopts "aAbBcClLnNpPwW" OPTION
+while getopts "aAbBcClLnNpPsSwW" OPTION
 do
 	let SHIFT+=1
 	case "$OPTION" in
@@ -171,6 +182,9 @@ do
 			;;
 		p|P)
 			FUNCT=to_hp
+			;;
+		s|S)
+			FUNCT=to_solaris
 			;;
 		w|W)
 			FUNCT=to_windows

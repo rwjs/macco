@@ -25,13 +25,15 @@ OPTIONS:
 	-c,-C	Cisco style ('maca.ddre.sses') (NB: always lowercase)
 	-h,-H	Help - display this text and quit.
 	-l	Linux style - lowercase ('ma:ca:dd:re:ss:es')
-	-L	Linux style - uppercase ('MA:CA:DD:RE:SS:ES')
+	-L	Linux style - UPPERCASE ('MA:CA:DD:RE:SS:ES')
 	-n	Naked style - lowercase ('macaddresses')
-	-N	Naked style - uppercase ('MACADDRESSES')
+	-N	Naked style - UPPERCASE ('MACADDRESSES')
 	-p	H(P) style - lowercase ('macadd-resses')
-	-P	H(P) style - uppercase ('MACADD-RESSES')
+	-P	H(P) style - UPPERCASE ('MACADD-RESSES')
+	-s	Solaris Style - lowercase ('50:1a:12:15:a:b')
+	-S	Solaris Style - UPPERCASE ('50:1A:12:15:A:B')
 	-w	Windows style - lowercase ('ma-ca-dd-re-ss-es')
-	-W	Windows style - uppercase ('MA-CA-DD-RE-SS-ES')
+	-W	Windows style - UPPERCASE ('MA-CA-DD-RE-SS-ES')
 
 NOTES
 ======
@@ -48,6 +50,5 @@ Written by Robert W.J. Stewart
 TODO
 ======
 
- - Add support for Solaris-style (`0:1:a:2:b:3` -> `00:01:0a:02:0b:03`)
  - Add input verification (possibly allowing for automatic detection and conversion of MAC addresses within a larger text)
  - Add case sensitivity for 'Automatic Mode' (ie, convert to the style defined by FUNCT instead of AUTO_FUNCT if the input MAC is not in FUNCT's forced case)
