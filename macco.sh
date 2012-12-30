@@ -32,6 +32,9 @@ Notes:
     'automatic' format (defined by "AUTO_FUNCT")
  - MAC address(es) can be supplied by STDIN, and/or script arguments.
     If both STDIN and arguments are supplied, STDIN is processed first.
+ - Input from STDIN will be parsed for MAC addresses (that is, the script will
+    make an effort to only convert tokens which look like MAC addresses whilst
+    passing through all other input).
  - If no MAC addresses are supplied, all system MAC addresses 
     (excluding loopback) are displayed.
 "
@@ -53,7 +56,7 @@ function to_cisco_lower
 function to_linux
 {
 	# Linux-style: ma:ca:dd:re:ss:es
-	sed 's/../&:/g;s/\:$//' <<< $@ 
+	sed 's/../&:/g;s/\:$//' <<< $@
 }
 
 function to_hp
@@ -71,7 +74,7 @@ function to_windows
 function to_naked
 {
 	# Naked-style: macaddresses / MACADDRESSES
-	echo $@ | tr -d '\:\-\.'
+	echo "$@" | tr -d '\:\-\.'
 }
 
 function to_solaris
@@ -113,6 +116,13 @@ function is_equiv
 	return 0
 }
 
+function is_macaddr
+(
+	clean=$(echo "$1" | tr -cd '[A-Fa-f0-9]')
+	[[ ${#clean} == 12 ]]
+	return $?
+)
+
 function get_case
 {
 	# $1	Function name
@@ -144,13 +154,38 @@ function convert
 	# $1	MAC address to convert
 	# $2	Output Case (true=UPPERCASE). No conversion if false
 
-	OUTPUT=$($FUNCT $(to_naked $1))
+	OUTPUT=$($FUNCT $(to_naked "$1"))
 	if $(is_true $AUTO_MODE) && $(is_equiv "$OUTPUT" "$1")
 	then
-		echo "$($AUTO_FUNCT $(to_naked $1))" | $(get_case $AUTO_FUNCT $2)
+		echo -n $($AUTO_FUNCT $(to_naked "$1")) | $(get_case $AUTO_FUNCT $2)
 	else
-		echo "$OUTPUT" | $(get_case $FUNCT $2)
+		echo -n "$OUTPUT" | $(get_case $FUNCT $2)
 	fi
+}
+
+function parse
+{
+	# Attempt to detect MAC addresses (only), and convert them.
+	#
+	# No arguments
+
+	while IFS='' read line
+	do
+		while IFS='' read -n1 chr
+		do
+			if [[ $chr =~ [$IFS] ]]
+			then
+				is_macaddr "$token" && convert "$token" "$UPPER_CASE" || printf "$token"
+				printf "$chr"
+				token=''
+				continue
+			fi
+			token+=$chr
+		done < <(echo "$line")
+		is_macaddr "$token" && convert "$token" "$UPPER_CASE" || printf "$token"
+		token=''
+		echo
+	done
 }
 
 ################################# Get Options #################################
@@ -210,13 +245,11 @@ shift $SHIFT # Must be done outside of `while getopt` loop (or things break).
 
 ################################## Run Program ################################
 
+
 if [[ ! -t 0 ]]
 # STDIN not empty
 then
-	while read mac
-	do
-		convert "$mac" "$UPPER_CASE"
-	done
+	parse
 fi
 
 if [[ -n "$1" ]]
@@ -224,13 +257,14 @@ then
 	for mac in $@
 	do
 		convert "$mac" "$UPPER_CASE"
+		echo
 	done
 elif [[ -t 0 ]]
 then
 	ifaces=$(ip link | sed '/^[\t ]/d;/LOOPBACK/d;s/://g' | awk '{print $2}')
 	echo -e "$ifaces" | while read iface ; do
 		mac=$(ip a s $iface | awk '/ether/{print $2}')
-		mac=$(convert $mac "$UPPER_CASE")
+		mac=$(convert "$mac" "$UPPER_CASE")
 		if [[ -n "$mac" ]]
 		then
 			echo -e "$iface:\t$mac"

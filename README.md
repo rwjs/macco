@@ -40,6 +40,7 @@ NOTES
 
  - Automatic Mode converts MACs to the default format (as defined by "FUNCT"). If the supplied MAC is already in that format (case-insensitive), it is converted to the 'automatic' format (as defined by "AUTO_FUNCT").
  - MAC address(es) can be supplied by STDIN, and/or script arguments. If both STDIN and arguments are supplied, STDIN is processed first.
+ - Input from STDIN will be parsed for MAC addresses (that is, the script will make an effort to only convert tokens which look like MAC addresses whilst passing through all other input).
  - If no MAC addresses are supplied, all system MAC addresses (excluding loopback) are displayed.
 
 AUTHOR
@@ -50,5 +51,5 @@ Written by Robert W.J. Stewart
 TODO
 ======
 
- - Add input verification (possibly allowing for automatic detection and conversion of MAC addresses within a larger text)
  - Add case sensitivity for 'Automatic Mode' (ie, convert to the style defined by FUNCT instead of AUTO_FUNCT if the input MAC is not in FUNCT's forced case)
+ - Optimise for speed (currently very slow on large inputs)
