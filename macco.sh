@@ -169,22 +169,16 @@ function parse
 	#
 	# No arguments
 
-	while IFS='' read line
+	while IFS='' read -d '\n' -n1 chr
 	do
-		while IFS='' read -n1 chr
-		do
-			if [[ $chr =~ [$IFS] ]]
-			then
-				is_macaddr "$token" && convert "$token" "$UPPER_CASE" || printf "$token"
-				printf "$chr"
-				token=''
-				continue
-			fi
-			token+=$chr
-		done < <(echo "$line")
-		is_macaddr "$token" && convert "$token" "$UPPER_CASE" || printf "$token"
-		token=''
-		echo
+		if [[ $chr =~ [$IFS] ]]
+		then
+			is_macaddr "$token" && convert "$token" "$UPPER_CASE" || printf "$token"
+			printf "$chr"
+			token=''
+			continue
+		fi
+		token+=$chr
 	done
 }
 
