@@ -220,9 +220,6 @@ elif [[ -t 0 ]]
 then
 	ip link | awk '/LOOPBACK/ {getline;next} {printf $2 "\t";getline;print $2}' | while read iface mac
 	do
-		if [[ -n "$mac" ]]
-		then
-			echo -e "$iface\t$(echo $mac | parse)"
-		fi
+		[[ -n "$mac" ]] && echo -e "$iface\t$(echo $mac | parse)"
 	done
 fi
