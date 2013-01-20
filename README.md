@@ -28,6 +28,7 @@ OPTIONS:
 	-L	Linux style - UPPERCASE ('MA:CA:DD:RE:SS:ES')
 	-n	Naked style - lowercase ('macaddresses')
 	-N	Naked style - UPPERCASE ('MACADDRESSES')
+	-O,-o   Only print MAC addresses; similar to the -o flag in grep(1)
 	-p	H(P) style - lowercase ('macadd-resses')
 	-P	H(P) style - UPPERCASE ('MACADD-RESSES')
 	-s	Solaris Style - lowercase ('50:1a:12:15:a:b')

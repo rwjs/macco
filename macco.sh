@@ -3,8 +3,9 @@
 ################################# Set defaults ################################
 
 FUNCT=to_linux
-AUTO_FUNCT=to_cisco_lower
-UPPER_CASE=''
+AUTO_FUNCT=to_cisco
+ONLY_MATCHING=1
+case_fnct() { tr 'A-Z' 'a-z' ; }
 
 ############################### Create Help text ##############################
 
@@ -19,6 +20,7 @@ Usage: [STDIN] | $0 [OPTIONS]... [MAC-ADDRESSES]...
 	-L	Linux style - UPPERCASE	('MA:CA:DD:RE:SS:ES')
 	-n	Naked style - lowercase	('macaddresses')
 	-N	Naked style - UPPERCASE	('MACADDRESSES')
+	-O,-o	Only print MAC addresses; similar to the -o flag in grep(1)
 	-p	H(P) style - lowercase ('macadd-resses')
 	-P	H(P) style - UPPERCASE ('MACADD-RESSES')
 	-s	Solaris style - lowercase ('50:1A:12:14:a:b')
@@ -41,48 +43,43 @@ Notes:
 
 ######################### Define Conversion Functions #########################
 #
-# Codes to append to force case;
-# _upper	force UPPERCASE
-# _lower	force lowercase
-# _ignore	ignore case
-#
 
-function to_cisco_lower
+function to_cisco
 {
 	# Cisco-style: maca.ddre.sses
-	sed 's/..../\U&\./g;s/\.$//' <<< $@
+	sed 's/..../\L&\./g;s/\.$//' <<< $@
 }
 
 function to_linux
 {
 	# Linux-style: ma:ca:dd:re:ss:es
-	sed 's/../&:/g;s/\:$//' <<< $@
+	sed 's/../&:/g;s/\:$//' <<< $@ | case_fnct
 }
 
 function to_hp
 {
 	# HP-style: macadd-resses
-	sed 's/....../&-/g;s/\-$//' <<< $@
+	sed 's/....../&-/g;s/\-$//' <<< $@ | case_fnct
 }
 
 function to_windows
 {
 	# Windows-style: MA-CA-DD-RE-SS-ES
-	sed 's/../&-/g;s/\-$//' <<< $@
+	sed 's/../&-/g;s/\-$//' <<< $@ | case_fnct
 }
 
 function to_naked
 {
 	# Naked-style: macaddresses / MACADDRESSES
-	echo "$@" | tr -d '\:\-\.'
+	echo "$@" | tr -d '\:\-\.' | case_fnct
 }
 
 function to_solaris
 {
-	sed 's/../:&/g;s/:0/:/g;s/^://' <<< $@
+	sed 's/../:&/g;s/:0/:/g;s/^://' <<< $@ | case_fnct
 }
 
-function to_binary_ignore
+function to_binary
 {
 	bc <<< "obase=2; ibase=16; $(to_naked $@ | tr [a-z] [A-Z])" | zfill 48
 }
@@ -92,12 +89,6 @@ function to_binary_ignore
 function zfill
 {
 	cat - | sed ':a;s/^.\{1,'"$[$1-1]"'\}$/0&/g;ta'
-}
-
-
-function is_true
-{
-	return $(egrep -i "true|yes|1|okay" <<< $1 > /dev/null)
 }
 
 function is_equiv
@@ -123,44 +114,17 @@ function is_macaddr
 	return $?
 )
 
-function get_case
-{
-	# $1	Function name
-	# $2	Suggested case
-
-	case $1 in
-		*_upper)
-			echo "tr '[a-f]' '[A-F]'"
-			;;
-		*_lower)
-			echo "tr '[A-F]' '[a-f]'"
-			;;
-		*_ignore)
-			echo "cat -"
-			;;
-		*)
-			if [[ -n "$2" ]]
-			then
-				$(is_true $2) && echo "tr '[a-f]' '[A-F]'" || echo "tr '[A-F]' '[a-f]'"
-			else
-				echo 'cat -'
-			fi
-			;;
-	esac
-}
-
 function convert
 {
 	# $1	MAC address to convert
 	# $2	Output Case (true=UPPERCASE). No conversion if false
 
 	OUTPUT=$($FUNCT $(to_naked "$1"))
-	if $(is_true $AUTO_MODE) && $(is_equiv "$OUTPUT" "$1")
+	if (( $AUTO_MODE )) && $(is_equiv "$OUTPUT" "$1")
 	then
-		echo -n $($AUTO_FUNCT $(to_naked "$1")) | $(get_case $AUTO_FUNCT $2)
-	else
-		echo -n "$OUTPUT" | $(get_case $FUNCT $2)
+		OUTPUT=$($AUTO_FUNCT $(to_naked "$1"))
 	fi
+	printf "$OUTPUT"
 }
 
 function parse
@@ -168,13 +132,21 @@ function parse
 	# Attempt to detect MAC addresses (only), and convert them.
 	#
 	# No arguments
+	OUTPUT=''
 
 	while IFS='' read -d '\n' -n1 chr
 	do
 		if [[ $chr =~ [$IFS] ]]
 		then
-			is_macaddr "$token" && convert "$token" "$UPPER_CASE" || printf "$token"
-			printf "$chr"
+			if is_macaddr "$token"
+			then
+				convert "$token"
+				(( $ONLY_MATCHING )) || echo
+			elif (( $ONLY_MATCHING ))
+			then
+				printf "$token"
+			fi
+			(( $ONLY_MATCHING )) && printf "$chr"
 			token=''
 			continue
 		fi
@@ -186,18 +158,18 @@ function parse
 
 SHIFT=0
 
-while getopts "aAbBcClLnNpPsSwW" OPTION
+while getopts "aAbBcClLnNoOpPsSwW" OPTION
 do
 	let SHIFT+=1
 	case "$OPTION" in
 		a|A)
-			AUTO_MODE='true'
+			AUTO_MODE=1
 			;;
 		b|B)
-			FUNCT=to_binary_ignore
+			FUNCT=to_binary
 			;;
 		c|C)
-			FUNCT=to_cisco_lower
+			FUNCT=to_cisco
 			;;
 		h|H)
 			echo "$HELP"
@@ -208,6 +180,9 @@ do
 			;;
 		n|N)
 			FUNCT=to_naked
+			;;
+		o|O)
+			ONLY_MATCHING=0
 			;;
 		p|P)
 			FUNCT=to_hp
@@ -229,9 +204,9 @@ do
 
 	if [[ "$OPTION" =~ [A-Z] ]]
 	then
-		UPPER_CASE='true'
+		case_fnct() { tr 'a-z' 'A-Z' ; }
 	else
-		UPPER_CASE='false'
+		case_fnct() { tr 'A-Z' 'a-z' ; }
 	fi
 done
 
@@ -246,13 +221,9 @@ then
 	parse
 fi
 
-if [[ -n "$1" ]]
+if [[ $# -gt 0 ]]
 then
-	for mac in $@
-	do
-		convert "$mac" "$UPPER_CASE"
-		echo
-	done
+	echo $@ | parse
 elif [[ -t 0 ]]
 then
 	ifaces=$(ip link | sed '/^[\t ]/d;/LOOPBACK/d;s/://g' | awk '{print $2}')
