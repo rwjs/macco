@@ -4,7 +4,7 @@
 
 FUNCT=to_linux
 AUTO_FUNCT=to_cisco
-ONLY_MATCHING=1
+ONLY_MATCHING=0
 case_fnct() { tr 'A-Z' 'a-z' ; }
 
 ############################### Create Help text ##############################
@@ -46,7 +46,7 @@ Notes:
 
 function to_cisco
 {
-	# Cisco-style: maca.ddre.sses
+	# Cisco-style: maca.ddre.sses (always lowercase)
 	sed 's/..../\L&\./g;s/\.$//' <<< $@
 }
 
@@ -114,19 +114,6 @@ function is_macaddr
 	return $?
 )
 
-function convert
-{
-	# $1	MAC address to convert
-	# $2	Output Case (true=UPPERCASE). No conversion if false
-
-	OUTPUT=$($FUNCT $(to_naked "$1"))
-	if (( $AUTO_MODE )) && $(is_equiv "$OUTPUT" "$1")
-	then
-		OUTPUT=$($AUTO_FUNCT $(to_naked "$1"))
-	fi
-	printf "$OUTPUT"
-}
-
 function parse
 {
 	# Attempt to detect MAC addresses (only), and convert them.
@@ -140,13 +127,18 @@ function parse
 		then
 			if is_macaddr "$token"
 			then
-				convert "$token"
-				(( $ONLY_MATCHING )) || echo
-			elif (( $ONLY_MATCHING ))
+				convtoken=$($FUNCT $(to_naked "$token"))
+				if (( $AUTO_MODE )) && $(is_equiv "$convtoken" "$token")
+				then
+					token=$($AUTO_FUNCT $(to_naked "$token"))
+				fi
+				(( $ONLY_MATCHING )) && echo "$convtoken" || printf "$convtoken" 
+
+			elif (( ! $ONLY_MATCHING ))
 			then
 				printf "$token"
 			fi
-			(( $ONLY_MATCHING )) && printf "$chr"
+			(( $ONLY_MATCHING )) || printf "$chr"
 			token=''
 			continue
 		fi
@@ -182,7 +174,7 @@ do
 			FUNCT=to_naked
 			;;
 		o|O)
-			ONLY_MATCHING=0
+			ONLY_MATCHING=1
 			;;
 		p|P)
 			FUNCT=to_hp
