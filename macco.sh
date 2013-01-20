@@ -226,13 +226,11 @@ then
 	echo $@ | parse
 elif [[ -t 0 ]]
 then
-	ifaces=$(ip link | sed '/^[\t ]/d;/LOOPBACK/d;s/://g' | awk '{print $2}')
-	echo -e "$ifaces" | while read iface ; do
-		mac=$(ip a s $iface | awk '/ether/{print $2}')
-		mac=$(convert "$mac" "$UPPER_CASE")
+	ip link | awk '/LOOPBACK/ {getline;next} {printf $2 "\t";getline;print $2}' | while read iface mac
+	do
 		if [[ -n "$mac" ]]
 		then
-			echo -e "$iface:\t$mac"
+			echo -e "$iface\t$(echo $mac | parse)"
 		fi
 	done
 fi
