@@ -132,13 +132,13 @@ function parse
 				then
 					token=$($AUTO_FUNCT $(to_naked "$token"))
 				fi
-				(( $ONLY_MATCHING )) && echo "$convtoken" || printf "$convtoken" 
+				(( $ONLY_MATCHING )) && echo "$convtoken" || printf -- "$convtoken" 
 
 			elif (( ! $ONLY_MATCHING ))
 			then
-				printf "$token"
+				printf -- "$token"
 			fi
-			(( $ONLY_MATCHING )) || printf "$chr"
+			(( $ONLY_MATCHING )) || printf -- "$chr"
 			token=''
 			continue
 		fi
@@ -154,27 +154,20 @@ while getopts "aAbBcClLnNoOpPsSwW" OPTION
 do
 	let SHIFT+=1
 	case "$OPTION" in
-		a|A)
-			AUTO_MODE=1
-			;;
+
+		#### 'Style' options ####
+
 		b|B)
 			FUNCT=to_binary
 			;;
 		c|C)
 			FUNCT=to_cisco
 			;;
-		h|H)
-			echo "$HELP"
-			exit 0
-			;;
 		l|L)
 			FUNCT=to_linux
 			;;
 		n|N)
 			FUNCT=to_naked
-			;;
-		o|O)
-			ONLY_MATCHING=1
 			;;
 		p|P)
 			FUNCT=to_hp
@@ -185,11 +178,28 @@ do
 		w|W)
 			FUNCT=to_windows
 			;;
+
+		## 'Normal' options
+		# Please use continue/exit/break in the following
+
+		a|A)
+			AUTO_MODE=1
+			continue
+			;;
+		h|H)
+			echo "$HELP"
+			exit 0
+			;;
+		o|O)
+			ONLY_MATCHING=1
+			continue
+			;;
+
 		--)
 			break
 			;;
 		?)
-			echo "$HELP"
+			echo "$HELP" >&2
 			exit 1
 			;;
 	esac
