@@ -119,16 +119,18 @@ function parse
 	# Attempt to detect MAC addresses (only), and convert them.
 	#
 	# No arguments
+        #
+        # The following assumes hexadecimal digits (optionally) separated by 
+        #  *regular* arbitrary separators. 
 
 	delim_chr=''
 	delim_cnt=0
 	cnt=0
 	token=''
+        term_chr=''
 
 	while IFS='' read -d '\n' -n1 chr
-#	while IFS='' read -n1 chr
 	do
-
 		if [[ $chr =~ [a-fA-F0-9] ]] 	# if chr is a hexadecimal digit
 		then
 			let cnt+=1
@@ -137,15 +139,16 @@ function parse
 			then
 				convtoken=$($FUNCT $(to_naked "$token"))
 
-				## Auto function logic
-				#if (( $AUTO_MODE )) && $(is_equiv "$convtoken" "$token")
-				#then
-				#	token=$($AUTO_FUNCT $(to_naked "$token"))
-				#fi
+				# Auto function logic
+				if (( $AUTO_MODE )) && $(is_equiv "$convtoken" "$token")
+				then
+					convtoken=$($AUTO_FUNCT $(to_naked "$token"))
+				fi
 
 				(( $ONLY_MATCHING )) && echo "$convtoken" || printf -- "$convtoken" 
 
 				token=''
+                                convtoken=''
 				delim_chr=''
 				delim_cnt=0
 				cnt=0
@@ -169,6 +172,7 @@ function parse
 		else
 			# if the delim is not regular or consistent
 			(( $ONLY_MATCHING )) || printf -- "${token}${chr}"
+                        term_chr=''
 			token=''
 			delim_chr=''
 			delim_cnt=0
