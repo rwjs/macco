@@ -119,31 +119,67 @@ function parse
 	# Attempt to detect MAC addresses (only), and convert them.
 	#
 	# No arguments
-	OUTPUT=''
+
+	delim_chr=''
+	delim_cnt=0
+	cnt=0
+	token=''
 
 	while IFS='' read -d '\n' -n1 chr
+#	while IFS='' read -n1 chr
 	do
-		if [[ $chr =~ [$IFS] ]]
+
+		if [[ $chr =~ [a-fA-F0-9] ]] 	# if chr is a hexadecimal digit
 		then
-			if is_macaddr "$token"
+			let cnt+=1
+			token="${token}${chr}"
+			if [[ $delim_cnt -gt 1 ]] && [[ ${#token} -eq $[ 11 + 12 / ($delim_cnt - 1)] ]]
 			then
 				convtoken=$($FUNCT $(to_naked "$token"))
-				if (( $AUTO_MODE )) && $(is_equiv "$convtoken" "$token")
-				then
-					token=$($AUTO_FUNCT $(to_naked "$token"))
-				fi
+
+				## Auto function logic
+				#if (( $AUTO_MODE )) && $(is_equiv "$convtoken" "$token")
+				#then
+				#	token=$($AUTO_FUNCT $(to_naked "$token"))
+				#fi
+
 				(( $ONLY_MATCHING )) && echo "$convtoken" || printf -- "$convtoken" 
 
-			elif (( ! $ONLY_MATCHING ))
-			then
-				printf -- "$token"
+				token=''
+				delim_chr=''
+				delim_cnt=0
+				cnt=0
+
+				continue
 			fi
-			(( $ONLY_MATCHING )) || printf -- "$chr"
-			token=''
+
+		elif [[ -z "$delim_chr" && $cnt -gt 0 ]]
+		then
+			let cnt+=1
+			delim_chr=$chr
+			delim_cnt=$cnt
+			token="${token}${chr}"
 			continue
+
+		elif [[ $delim_cnt -gt 0 ]] && [[ $[ ($cnt + 1) % $delim_cnt ] -eq 0 ]] && [[ $chr == $delim_chr ]] 	
+		then
+			token="${token}${chr}"
+			let cnt+=1
+			continue
+		else
+			# if the delim is not regular or consistent
+			(( $ONLY_MATCHING )) || printf -- "${token}${chr}"
+			token=''
+			delim_chr=''
+			delim_cnt=0
+			cnt=0
 		fi
-		token+=$chr
+
+
+		###############################
+		
 	done
+	(( $ONLY_MATCHING )) || printf -- "$token"
 }
 
 ################################# Get Options #################################
