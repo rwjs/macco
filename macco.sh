@@ -107,13 +107,6 @@ function is_equiv
 	return 0
 }
 
-function is_macaddr
-(
-	clean=$(echo "$1" | tr -cd '[A-Fa-f0-9]')
-	[[ ${#clean} == 12 ]]
-	return $?
-)
-
 function parse
 {
 	# Attempt to detect MAC addresses (only), and convert them.
@@ -131,33 +124,34 @@ function parse
 
 	while IFS='' read -d '\n' -n1 chr
 	do
-		if [[ $chr =~ [a-fA-F0-9] ]] 	# if chr is a hexadecimal digit
+		if [[ $delim_cnt -gt 1 ]] && [[ "$chr" == "$term_chr" ]] && [[ ${#token} -eq $[ 11 + 12 / ($delim_cnt - 1)] ]]
+		then
+			convtoken=$($FUNCT $(to_naked "$token"))
+
+			# Auto function logic
+			if (( $AUTO_MODE )) && $(is_equiv "$convtoken" "$token")
+			then
+				convtoken=$($AUTO_FUNCT $(to_naked "$token"))
+			fi
+
+			(( $ONLY_MATCHING )) && echo "$convtoken" || printf -- "$convtoken" 
+
+			token=''
+			convtoken=''
+			delim_chr=''
+			delim_cnt=0
+			cnt=0
+
+			continue
+
+		elif [[ $chr =~ [a-fA-F0-9] ]] 	# if chr is a hexadecimal digit
 		then
 			let cnt+=1
 			token="${token}${chr}"
-			if [[ $delim_cnt -gt 1 ]] && [[ ${#token} -eq $[ 11 + 12 / ($delim_cnt - 1)] ]]
-			then
-				convtoken=$($FUNCT $(to_naked "$token"))
 
-				# Auto function logic
-				if (( $AUTO_MODE )) && $(is_equiv "$convtoken" "$token")
-				then
-					convtoken=$($AUTO_FUNCT $(to_naked "$token"))
-				fi
-
-				(( $ONLY_MATCHING )) && echo "$convtoken" || printf -- "$convtoken" 
-
-				token=''
-                                convtoken=''
-				delim_chr=''
-				delim_cnt=0
-				cnt=0
-
-				continue
-			fi
-
-		elif [[ -z "$delim_chr" && $cnt -gt 0 ]]
+		elif [[ -z "$delim_chr" && $cnt -gt 0 ]] 
 		then
+			# set the delim_chr
 			let cnt+=1
 			delim_chr=$chr
 			delim_cnt=$cnt
@@ -166,13 +160,14 @@ function parse
 
 		elif [[ $delim_cnt -gt 0 ]] && [[ $[ ($cnt + 1) % $delim_cnt ] -eq 0 ]] && [[ $chr == $delim_chr ]] 	
 		then
+			# delim_chr regular repeat detected
 			token="${token}${chr}"
 			let cnt+=1
 			continue
 		else
-			# if the delim is not regular or consistent
+			# the delim is not regular or consistent - not a MAC address
 			(( $ONLY_MATCHING )) || printf -- "${token}${chr}"
-                        term_chr=''
+                        term_chr="$chr"
 			token=''
 			delim_chr=''
 			delim_cnt=0
