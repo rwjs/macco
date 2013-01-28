@@ -42,7 +42,6 @@ Notes:
 "
 
 ######################### Define Conversion Functions #########################
-#
 
 function to_cisco
 {
@@ -112,19 +111,18 @@ function parse
 	# Attempt to detect MAC addresses (only), and convert them.
 	#
 	# No arguments
-        #
-        # The following assumes hexadecimal digits (optionally) separated by 
-        #  *regular* arbitrary separators. 
+	#
+	# The following assumes hexadecimal digits (optionally) separated by 
+	#  *regular* arbitrary separators. 
 
 	delim_chr=''
 	delim_cnt=0
 	cnt=0
 	token=''
-        term_chr=''
 
-	while IFS='' read -d '\n' -n1 chr
+	while IFS='' read -d '\n' -n1 chr	# get characters one-by-one and assign them to $chr
 	do
-		if [[ $delim_cnt -gt 1 ]] && [[ "$chr" == "$term_chr" ]] && [[ ${#token} -eq $[ 11 + 12 / ($delim_cnt - 1)] ]]
+		if [[ $delim_cnt -gt 1 ]] && [[ ! "$chr" =~ [0-9a-fA-F] ]] && [[ ${#token} -eq $[ 11 + 12 / ($delim_cnt - 1)] ]]
 		then
 			convtoken=$($FUNCT $(to_naked "$token"))
 
@@ -167,7 +165,6 @@ function parse
 		else
 			# the delim is not regular or consistent - not a MAC address
 			(( $ONLY_MATCHING )) || printf -- "${token}${chr}"
-                        term_chr="$chr"
 			token=''
 			delim_chr=''
 			delim_cnt=0
@@ -265,6 +262,6 @@ elif [[ -t 0 ]]
 then
 	ip link | awk '/LOOPBACK/ {getline;next} {printf $2 "\t";getline;print $2}' | while read iface mac
 	do
-		[[ -n "$mac" ]] && echo -e "$iface\t$(echo $mac | parse)"
+		[[ -n "$mac" ]] && echo -e "$iface\t$(echo "$mac" | parse)"
 	done
 fi
