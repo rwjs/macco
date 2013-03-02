@@ -150,7 +150,8 @@ function parse
 				convtoken=$($AUTO_FUNCT $(to_naked "$token"))
 			fi
 
-			(( $ONLY_MATCHING )) && echo "$convtoken" || printf -- "$convtoken" 
+			(( $ONLY_MATCHING )) && echo "$convtoken" || echo -n "$convtoken$chr"
+			(( $ONLY_MATCHING )) && [[ $chr == \n ]] && echo
 
 			token=''
 			convtoken=''
@@ -190,10 +191,7 @@ function parse
 		fi
 
 
-		###############################
-		
 	done
-	(( $ONLY_MATCHING )) || printf -- "$token"
 }
 
 ################################# Get Options #################################
