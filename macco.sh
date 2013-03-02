@@ -202,7 +202,7 @@ function parse
 			# Auto function logic
 			if (( $AUTO_MODE )) && $(is_equiv "$convtoken" "$token")
 			then
-				convtoken=$($AUTO_FUNCT $(to_naked "$token"))
+				convtoken=$(echo "$token" | to_naked | $AUTO_FUNCT)
 			fi
 
 			(( $ONLY_MATCHING )) && echo "$convtoken" || echo -n "$convtoken$chr"
@@ -329,7 +329,8 @@ shift $SHIFT # Must be done outside of `while getopt` loop (or things break).
 
 if (( ARP_LOOKUP ))
 then
-	ONLY_MATCHING=1
+	ONLY_MATCHING=0
+	ORIG_FUNCT="$FUNCT"
 	(( INT_LOOKUP )) && { echo "ARP_LOOKUP (-r|-R) and INT_LOOKUP (-i|-I) are mutually exclusive!" >&2 ; exit 1 ; }
 	[[ $FUNCT == to_cisco ]] && FUNCT='arp_cisco'
 	[[ $FUNCT == to_linux ]] && FUNCT='arp_linux'
@@ -338,7 +339,8 @@ fi
 
 if (( INT_LOOKUP ))
 then
-	ONLY_MATCHING=1
+	ONLY_MATCHING=0
+	ORIG_FUNCT="$FUNCT"
 	[[ $FUNCT == to_cisco ]] && FUNCT='int_cisco'
 	[[ $FUNCT == to_linux ]] && FUNCT='int_linux'
 	[[ $FUNCT == to_windows ]] && FUNCT='int_windows'
@@ -358,8 +360,9 @@ then
 	echo $@ | parse
 elif [[ -t 0 ]]
 then
+	[[ -n $ORIG_FUNCT ]] && FUNCT="$ORIG_FUNCT"
 	ip link | awk '/LOOPBACK/ {getline;next} {printf $2 "\t";getline;print $2}' | while read iface mac
 	do
-		[[ -n "$mac" ]] && echo -e "$iface\t$(echo "$mac" | parse)"
+		[[ -n "$mac" ]] && echo -e "$iface\t$(echo -e "$mac" | parse)"
 	done
 fi
