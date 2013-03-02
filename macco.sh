@@ -120,9 +120,27 @@ function parse
 	cnt=0
 	token=''
 
+	function is_complete_mac
+	{
+		# Check if the supplied token constitutes a complete MAC address
+		#
+		# $1 - token
+		# $2 - delim_cnt
+
+		if [[ $2 -eq 0 ]] && [[ ${#1} -eq 12 ]]
+		then
+			return
+		elif [[ ${#1} -eq $[ 11 + 12 / $[ $2 - 1 ] ] ]]
+		then
+			return
+		else
+			return 1
+		fi
+	}
+
 	while IFS='' read -d '\n' -n1 chr	# get characters one-by-one and assign them to $chr
 	do
-		if [[ $delim_cnt -gt 1 ]] && [[ ! "$chr" =~ [0-9a-fA-F] ]] && [[ ${#token} -eq $[ 11 + 12 / ($delim_cnt - 1)] ]]
+		if [[ ! "$chr" =~ [0-9a-fA-F] ]] && is_complete_mac "$token" "$delim_cnt"
 		then
 			convtoken=$($FUNCT $(to_naked "$token"))
 
