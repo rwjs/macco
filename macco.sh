@@ -14,8 +14,10 @@ Usage: [STDIN] | $0 [OPTIONS]... [MAC-ADDRESSES]...
 
 	-a,-A	'Automatic' mode (depends on defaults defined in the script)
 	-b,-B	Binary style
-	-c,-C	Cisco style ('maca.ddre.sses') (NB: always lowercase)
+	-c	Cisco style ('maca.ddre.sses') - for newer Cisco IOS
+	-C	Cisco style ('maca.ddre.sses') - for older Cisco IOS
 	-h,-H	Help - display this text and quit.
+	-i,-I	Interface Lookup
 	-l	Linux style - lowercase	('ma:ca:dd:re:ss:es')
 	-L	Linux style - UPPERCASE	('MA:CA:DD:RE:SS:ES')
 	-n	Naked style - lowercase	('macaddresses')
@@ -23,6 +25,7 @@ Usage: [STDIN] | $0 [OPTIONS]... [MAC-ADDRESSES]...
 	-O,-o	Only print MAC addresses; similar to the -o flag in grep(1)
 	-p	H(P) style - lowercase ('macadd-resses')
 	-P	H(P) style - UPPERCASE ('MACADD-RESSES')
+	-r,-R	ARP Lookup
 	-s	Solaris style - lowercase ('50:1A:12:14:a:b')
 	-S	Solaris style - UPPERCASE ('50:1A:12:15:A:B')
 	-w	Windows style - lowercase ('ma-ca-dd-re-ss-es')
@@ -39,6 +42,12 @@ Notes:
     passing through all other input).
  - If no MAC addresses are supplied, all system MAC addresses 
     (excluding loopback) are displayed.
+ - Interface Lookup (INT_LOOKUP) and ARP Lookup (ARP_LOOKUP) embeds the 
+    converted addresses in various lookup commands (per the style used).
+    NB: Both Lookup modes imply ONLY_MATCHING (-o).
+ - The New/Old divide in Cisco/IOS affects whether 'show mac-address-table'
+    (old) or 'show mac address-table' (new) is used. It only matters if 
+    INT_LOOKUP (-m|-M) is used.
 "
 
 ######################### Define Conversion Functions #########################
@@ -46,41 +55,87 @@ Notes:
 function to_cisco
 {
 	# Cisco-style: maca.ddre.sses (always lowercase)
-	sed 's/..../\L&\./g;s/\.$//' <<< $@
+	sed 's/..../\L&\./g;s/\.$//'
 }
 
 function to_linux
 {
 	# Linux-style: ma:ca:dd:re:ss:es
-	sed 's/../&:/g;s/\:$//' <<< $@ | case_fnct
+	sed 's/../&:/g;s/\:$//' | case_fnct
 }
 
 function to_hp
 {
 	# HP-style: macadd-resses
-	sed 's/....../&-/g;s/\-$//' <<< $@ | case_fnct
+	sed 's/....../&-/g;s/\-$//' | case_fnct
 }
 
 function to_windows
 {
 	# Windows-style: MA-CA-DD-RE-SS-ES
-	sed 's/../&-/g;s/\-$//' <<< $@ | case_fnct
+	sed 's/../&-/g;s/\-$//' | case_fnct
 }
 
 function to_naked
 {
 	# Naked-style: macaddresses / MACADDRESSES
-	echo "$@" | tr -d '\:\-\.' | case_fnct
+	tr -d '\:\-\.' | case_fnct
 }
 
 function to_solaris
 {
-	sed 's/../:&/g;s/:0/:/g;s/^://' <<< $@ | case_fnct
+	sed 's/../:&/g;s/:0/:/g;s/^://' | case_fnct
 }
 
 function to_binary
 {
-	bc <<< "obase=2; ibase=16; $(to_naked $@ | tr [a-z] [A-Z])" | zfill 48
+	bc <<< "obase=2; ibase=16; $(cat - | to_naked | tr [a-z] [A-Z])" | zfill 48
+}
+
+######################### Define ARP_LOOKUP Functions #########################
+
+function arp_cisco
+{
+	# Cisco ARP lookup:` show ip arp maca.ddre.sses`
+	to_cisco | sed 's/^/show ip arp /'
+}
+
+function arp_linux
+{
+	# Linux ARP lookup: `arp -n | grep ma:ca:dd:re:ss:es`
+	to_linux | sed 's/^/arp -n | grep /'
+}
+
+function arp_windows
+{
+	# Windows ARP lookup: `arp -a | findstr MA-CA-DD-RE-SS-ES`
+	to_windows | sed 's/^/arp -a | findstr /'
+}
+
+######################### Define INT_LOOKUP Functions #########################
+
+function int_cisco
+{
+	# Cisco INT lookup: 'show mac[- ]address-table maca.ddre.sses | include /'
+
+	if (( NEW_CISCO ))
+	then
+		to_cisco | sed 's/.*/show mac address-table address & | include \//'
+	else
+		to_cisco | sed 's/.*/show mac-address-table address & | include \//'
+	fi
+}
+
+function int_linux
+{
+	# Linux INT lookup: `arp -n | grep ma:ca:dd:re:ss:es`
+	to_linux | sed 's/^/arp -n | grep /'
+}
+
+function int_windows
+{
+	# Windows INT lookup: `arp -a | findstr MA-CA-DD-RE-SS-ES`
+	to_windows | sed 's/^/arp -a | findstr /'
 }
 
 ########################### Define Helper Functions ###########################
@@ -142,7 +197,7 @@ function parse
 	do
 		if [[ ! "$chr" =~ [0-9a-fA-F] ]] && is_complete_mac "$token" "$delim_cnt"
 		then
-			convtoken=$($FUNCT $(to_naked "$token"))
+			convtoken=$(echo "$token" | to_naked | $FUNCT)
 
 			# Auto function logic
 			if (( $AUTO_MODE )) && $(is_equiv "$convtoken" "$token")
@@ -198,7 +253,7 @@ function parse
 
 SHIFT=0
 
-while getopts "aAbBcClLnNoOpPsSwW" OPTION
+while getopts "aAbBcChHiIlLnNoOpPrRsSwW" OPTION
 do
 	let SHIFT+=1
 	case "$OPTION" in
@@ -210,6 +265,8 @@ do
 			;;
 		c|C)
 			FUNCT=to_cisco
+			[[ $OPTION == c ]] && NEW_CISCO=1 || NEW_CISCO=0
+			# old cisco is `mac-address-table`, new cisco is `mac address-table`
 			;;
 		l|L)
 			FUNCT=to_linux
@@ -225,6 +282,12 @@ do
 			;;
 		w|W)
 			FUNCT=to_windows
+			;;
+		i|I)
+			INT_LOOKUP=1
+			;;
+		r|R)
+			ARP_LOOKUP=1
 			;;
 
 		## 'Normal' options
@@ -262,7 +325,26 @@ done
 
 shift $SHIFT # Must be done outside of `while getopt` loop (or things break).
 
-################################## Run Program ################################
+####################### Bind lookup functions per style #######################
+
+if (( ARP_LOOKUP ))
+then
+	ONLY_MATCHING=1
+	(( INT_LOOKUP )) && { echo "ARP_LOOKUP (-r|-R) and INT_LOOKUP (-i|-I) are mutually exclusive!" >&2 ; exit 1 ; }
+	[[ $FUNCT == to_cisco ]] && FUNCT='arp_cisco'
+	[[ $FUNCT == to_linux ]] && FUNCT='arp_linux'
+	[[ $FUNCT == to_windows ]] && FUNCT='arp_windows'
+fi
+
+if (( INT_LOOKUP ))
+then
+	ONLY_MATCHING=1
+	[[ $FUNCT == to_cisco ]] && FUNCT='int_cisco'
+	[[ $FUNCT == to_linux ]] && FUNCT='int_linux'
+	[[ $FUNCT == to_windows ]] && FUNCT='int_windows'
+fi
+
+################################# Run Program #################################
 
 
 if [[ ! -t 0 ]]

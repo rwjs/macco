@@ -22,27 +22,32 @@ OPTIONS:
 
 	-a,-A	'Automatic' mode (depends on defaults defined in the script)
 	-b,-B	Binary style
-	-c,-C	Cisco style ('maca.ddre.sses') (NB: always lowercase)
+	-c	Cisco style ('maca.ddre.sses') - for newer Cisco IOS
+	-C	Cisco style ('maca.ddre.sses') - for older Cisco IOS
 	-h,-H	Help - display this text and quit.
-	-l	Linux style - lowercase ('ma:ca:dd:re:ss:es')
-	-L	Linux style - UPPERCASE ('MA:CA:DD:RE:SS:ES')
-	-n	Naked style - lowercase ('macaddresses')
-	-N	Naked style - UPPERCASE ('MACADDRESSES')
-	-O,-o   Only print MAC addresses; similar to the -o flag in grep(1)
+	-i,-I	Interface Lookup
+	-l	Linux style - lowercase	('ma:ca:dd:re:ss:es')
+	-L	Linux style - UPPERCASE	('MA:CA:DD:RE:SS:ES')
+	-n	Naked style - lowercase	('macaddresses')
+	-N	Naked style - UPPERCASE	('MACADDRESSES')
+	-O,-o	Only print MAC addresses; similar to the -o flag in grep(1)
 	-p	H(P) style - lowercase ('macadd-resses')
 	-P	H(P) style - UPPERCASE ('MACADD-RESSES')
-	-s	Solaris Style - lowercase ('50:1a:12:15:a:b')
-	-S	Solaris Style - UPPERCASE ('50:1A:12:15:A:B')
+	-r,-R	ARP Lookup
+	-s	Solaris style - lowercase ('50:1A:12:14:a:b')
+	-S	Solaris style - UPPERCASE ('50:1A:12:15:A:B')
 	-w	Windows style - lowercase ('ma-ca-dd-re-ss-es')
 	-W	Windows style - UPPERCASE ('MA-CA-DD-RE-SS-ES')
 
 NOTES
 ======
 
- - Automatic Mode converts MACs to the default format (as defined by "FUNCT"). If the supplied MAC is already in that format (case-insensitive), it is converted to the 'automatic' format (as defined by "AUTO_FUNCT").
+ - Automatic Mode converts to the 'default' format (as defined by FUNCT). If the supplied MAC is already in that format, it is converted to the 'automatic' format (defined by AUTO_FUNCT)
  - MAC address(es) can be supplied by STDIN, and/or script arguments. If both STDIN and arguments are supplied, STDIN is processed first.
  - Input from STDIN will be parsed for MAC addresses (that is, the script will make an effort to only convert tokens which look like MAC addresses whilst passing through all other input).
  - If no MAC addresses are supplied, all system MAC addresses (excluding loopback) are displayed.
+ - Interface Lookup (INT_LOOKUP) and ARP Lookup (ARP_LOOKUP) embeds the converted addresses in various lookup commands (per the style used). NB: Both Lookup modes imply ONLY_MATCHING (-o).
+ - The New/Old divide in Cisco/IOS affects whether 'show mac-address-table' (old) or 'show mac address-table' (new) is used. It only matters if INT_LOOKUP (-m|-M) is used.
 
 AUTHOR
 ======
@@ -52,5 +57,4 @@ Written by Robert W.J. Stewart
 TODO
 ======
 
- - Add case sensitivity for 'Automatic Mode' (ie, convert to the style defined by FUNCT instead of AUTO_FUNCT if the input MAC is not in FUNCT's forced case)
- - Optimise for speed (currently very slow on large inputs)
+ - Add interface/ARP support for more vendors (Juniper NetScreen/JunOS, HP, etc)
