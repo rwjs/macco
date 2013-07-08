@@ -4,6 +4,7 @@
 
 FUNCT=to_linux
 AUTO_FUNCT=to_cisco
+AUTO_MODE=1
 ONLY_MATCHING=0
 case_fnct() { tr 'A-Z' 'a-z' ; }
 
