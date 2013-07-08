@@ -64,7 +64,7 @@ Notes:
 function to_cisco
 {
 	# Cisco-style: maca.ddre.sses (always lowercase)
-	sed 's/..../\L&\./g;s/\.$//'
+	sed 's/..../&\./g;s/\.$//' | tr 'A-F' 'a-f'
 }
 
 function to_linux
