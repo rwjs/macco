@@ -16,7 +16,8 @@ Usage: [STDIN] | $0 [OPTIONS]... [MAC-ADDRESSES]...
 	-b,-B	Binary style
 	-c	Cisco style ('maca.ddre.sses') - for newer Cisco IOS
 	-C	Cisco style ('maca.ddre.sses') - for older Cisco IOS
-	-h,-H	Help - display this text and quit.
+	-h	Help - display brief help text and quit.
+	-H	Help - display full help text and quit.
 	-i,-I	Interface Lookup
 	-l	Linux style - lowercase	('ma:ca:dd:re:ss:es')
 	-L	Linux style - UPPERCASE	('MA:CA:DD:RE:SS:ES')
@@ -30,7 +31,11 @@ Usage: [STDIN] | $0 [OPTIONS]... [MAC-ADDRESSES]...
 	-S	Solaris style - UPPERCASE ('50:1A:12:15:A:B')
 	-w	Windows style - lowercase ('ma-ca-dd-re-ss-es')
 	-W	Windows style - UPPERCASE ('MA-CA-DD-RE-SS-ES')
+"
 
+# HELP2 - 'extended' help text
+
+HELP2="
 Notes: 
  - Automatic Mode converts to the 'default' format (as defined by "FUNCT"). 
     If the supplied MAC is already in that format, it is converted to the 
@@ -290,14 +295,18 @@ do
 			;;
 
 		## 'Normal' options
-		# Please use continue/exit/break in the following
+		# Please use continue/exit/break in the following when adding more options
 
 		a|A)
 			AUTO_MODE=1
 			continue
 			;;
-		h|H)
-			echo "$HELP"
+		h)
+			echo -e "$HELP"
+			exit 0
+			;;
+		H)
+			echo -e "$HELP$HELP2"
 			exit 0
 			;;
 		o|O)
