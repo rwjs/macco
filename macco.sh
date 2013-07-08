@@ -150,9 +150,9 @@ function is_equiv
 	[[ -z "$2" ]] && return 0
 	function normalise
 	{
-		echo $@ | tr '[a-f]' '[A-F]'
+		echo "$@" | tr '[a-f]' '[A-F]'
 	}
-	ref=$(normalise $1)
+	ref="$(normalise $1)"
 	shift
 	for x in "$@"
 	do
@@ -206,7 +206,7 @@ function parse
 			fi
 
 			(( $ONLY_MATCHING )) && echo "$convtoken" || echo -n "$convtoken$chr"
-			(( $ONLY_MATCHING )) && [[ $chr == \n ]] && echo
+			#(( $ONLY_MATCHING )) && [[ "$chr" == \n ]] && echo
 
 			token=''
 			convtoken=''
@@ -216,12 +216,12 @@ function parse
 
 			continue
 
-		elif [[ $chr =~ [a-fA-F0-9] ]] 	# if chr is a hexadecimal digit
+		elif [[ "$chr" =~ [a-fA-F0-9] ]] 	# if chr is a hexadecimal digit
 		then
 			let cnt+=1
 			token="${token}${chr}"
 
-		elif [[ -z "$delim_chr" && $cnt -gt 0 ]] 
+		elif [[ -z "$delim_chr" && $cnt -gt 0 && $cnt -le 6 ]] 
 		then
 			# set the delim_chr
 			let cnt+=1
@@ -230,7 +230,7 @@ function parse
 			token="${token}${chr}"
 			continue
 
-		elif [[ $delim_cnt -gt 0 ]] && [[ $[ ($cnt + 1) % $delim_cnt ] -eq 0 ]] && [[ $chr == $delim_chr ]] 	
+		elif [[ $delim_cnt -gt 0 ]] && [[ $[ ($cnt + 1) % $delim_cnt ] -eq 0 ]] && [[ "$chr" == "$delim_chr" ]] 	
 		then
 			# delim_chr regular repeat detected
 			token="${token}${chr}"
@@ -244,7 +244,6 @@ function parse
 			delim_cnt=0
 			cnt=0
 		fi
-
 
 	done
 }
@@ -329,7 +328,7 @@ shift $SHIFT # Must be done outside of `while getopt` loop (or things break).
 
 if (( ARP_LOOKUP ))
 then
-	ONLY_MATCHING=0
+	ONLY_MATCHING=1
 	ORIG_FUNCT="$FUNCT"
 	(( INT_LOOKUP )) && { echo "ARP_LOOKUP (-r|-R) and INT_LOOKUP (-i|-I) are mutually exclusive!" >&2 ; exit 1 ; }
 	[[ $FUNCT == to_cisco ]] && FUNCT='arp_cisco'
@@ -339,7 +338,7 @@ fi
 
 if (( INT_LOOKUP ))
 then
-	ONLY_MATCHING=0
+	ONLY_MATCHING=1
 	ORIG_FUNCT="$FUNCT"
 	[[ $FUNCT == to_cisco ]] && FUNCT='int_cisco'
 	[[ $FUNCT == to_linux ]] && FUNCT='int_linux'
