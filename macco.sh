@@ -22,6 +22,8 @@ Usage: [STDIN] | $0 [OPTIONS]... [MAC-ADDRESSES]...
 	-i,-I	Interface Lookup
 	-l	Linux style - lowercase	('ma:ca:dd:re:ss:es')
 	-L	Linux style - UPPERCASE	('MA:CA:DD:RE:SS:ES')
+	-m	HP/H3C ComWare style - lowercase ('maca-ddre-sses')
+	-M	HP/H3C ComWare style - UPPERCASE ('MACA-DDRE-SSES')
 	-n	Naked style - lowercase	('macaddresses')
 	-N	Naked style - UPPERCASE	('MACADDRESSES')
 	-O,-o	Only print MAC addresses; similar to the -o flag in grep(1)
@@ -77,6 +79,12 @@ function to_hp
 {
 	# HP-style: macadd-resses
 	sed 's/....../&-/g;s/\-$//' | case_fnct
+}
+
+function to_h3c
+{
+	# HP/H3C ComWare style: maca-ddre-sses
+	sed 's/..../&-/g;s/\-$//' | case_fnct
 }
 
 function to_windows
@@ -272,7 +280,7 @@ function parse
 
 SHIFT=0
 
-while getopts "aAbBcChHiIlLnNoOpPrRsSwWxX" OPTION
+while getopts "aAbBcChHiIlLmMnNoOpPrRsSwWxX" OPTION
 do
 	let SHIFT+=1
 	case "$OPTION" in
@@ -291,6 +299,10 @@ do
 			;;
 		l|L)
 			FUNCT=to_linux
+			AUTO_MODE=0
+			;;
+		m|M)
+			FUNCT=to_h3c
 			AUTO_MODE=0
 			;;
 		n|N)
