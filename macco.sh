@@ -32,6 +32,7 @@ Usage: [STDIN] | $0 [OPTIONS]... [MAC-ADDRESSES]...
 	-S	Solaris style - UPPERCASE ('50:1A:12:15:A:B')
 	-w	Windows style - lowercase ('ma-ca-dd-re-ss-es')
 	-W	Windows style - UPPERCASE ('MA-CA-DD-RE-SS-ES')
+	-x,-X	'Exclude' mode (filters out things like global broadcast)
 "
 
 # HELP2 - 'extended' help text
@@ -54,6 +55,8 @@ Notes:
  - The New/Old divide in Cisco/IOS affects whether 'show mac-address-table'
     (old) or 'show mac address-table' (new) is used. It only matters if 
     INT_LOOKUP (-m|-M) is used.
+ - Exclude mode current filters 00:00:00:00:00:00 and FF:FF:FF:FF:FF:FF.
+    More (or custom) filters might be added in future versions.
 "
 
 ######################### Define Conversion Functions #########################
@@ -167,6 +170,16 @@ function is_equiv
 	return 0
 }
 
+function is_excludeable
+{
+	naked=$(echo $1 | to_naked)
+	[[ "$naked" == 000000000000 ]] && return 0
+	[[ "$naked" == ffffffffffff ]] && return 0
+	[[ "$naked" == FFFFFFFFFFFF ]] && return 0
+	return 1
+}
+
+
 function parse
 {
 	# Attempt to detect MAC addresses (only), and convert them.
@@ -205,6 +218,13 @@ function parse
 		then
 			convtoken=$(echo "$token" | to_naked | $FUNCT)
 
+			delim_chr=''
+			delim_cnt=0
+			cnt=0
+
+			# Exclude mode logic
+			(( $EXCLUDE )) && $(is_excludeable "$convtoken") && token='' && continue
+
 			# Auto function logic
 			if (( $AUTO_MODE )) && $(is_equiv "$convtoken" "$token")
 			then
@@ -212,14 +232,9 @@ function parse
 			fi
 
 			(( $ONLY_MATCHING )) && echo "$convtoken" || echo -n "$convtoken$chr"
-			#(( $ONLY_MATCHING )) && [[ "$chr" == \n ]] && echo
+
 
 			token=''
-			convtoken=''
-			delim_chr=''
-			delim_cnt=0
-			cnt=0
-
 			continue
 
 		elif [[ "$chr" =~ [a-fA-F0-9] ]] 	# if chr is a hexadecimal digit
@@ -258,7 +273,7 @@ function parse
 
 SHIFT=0
 
-while getopts "aAbBcChHiIlLnNoOpPrRsSwW" OPTION
+while getopts "aAbBcChHiIlLnNoOpPrRsSwWxX" OPTION
 do
 	let SHIFT+=1
 	case "$OPTION" in
@@ -314,7 +329,10 @@ do
 			ONLY_MATCHING=1
 			continue
 			;;
-
+		x|X)
+			EXCLUDE=1
+			continue
+			;;
 		--)
 			break
 			;;
