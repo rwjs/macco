@@ -184,7 +184,7 @@ function parse
 {
 	# Attempt to detect MAC addresses (only), and convert them.
 	#
-	# No arguments
+	# No arguments. Reads STDIN
 	#
 	# The following assumes hexadecimal digits (optionally) separated by 
 	#  *regular* arbitrary separators. 
@@ -212,18 +212,18 @@ function parse
 		fi
 	}
 
-	while IFS='' read -d '\n' -n1 chr	# get characters one-by-one and assign them to $chr
+	while IFS='' read -d '\n' -n1 chr	# get one character from STDIN and assign to $chr
 	do
 		if [[ ! "$chr" =~ [0-9a-fA-F] ]] && is_complete_mac "$token" "$delim_cnt"
 		then
 			convtoken=$(echo "$token" | to_naked | $FUNCT)
 
-			delim_chr=''
+			unset delim_chr
 			delim_cnt=0
 			cnt=0
 
 			# Exclude mode logic
-			(( $EXCLUDE )) && $(is_excludeable "$convtoken") && token='' && continue
+			(( $EXCLUDE )) && $(is_excludeable "$convtoken") && unset convtoken token && continue
 
 			# Auto function logic
 			if (( $AUTO_MODE )) && $(is_equiv "$convtoken" "$token")
@@ -233,8 +233,7 @@ function parse
 
 			(( $ONLY_MATCHING )) && echo "$convtoken" || echo -n "$convtoken$chr"
 
-
-			token=''
+			unset convtoken token
 			continue
 
 		elif [[ "$chr" =~ [a-fA-F0-9] ]] 	# if chr is a hexadecimal digit
@@ -282,26 +281,33 @@ do
 
 		b|B)
 			FUNCT=to_binary
+			AUTO_MODE=0
 			;;
 		c|C)
 			FUNCT=to_cisco
 			[[ $OPTION == c ]] && NEW_CISCO=1 || NEW_CISCO=0
 			# old cisco is `mac-address-table`, new cisco is `mac address-table`
+			AUTO_MODE=0
 			;;
 		l|L)
 			FUNCT=to_linux
+			AUTO_MODE=0
 			;;
 		n|N)
 			FUNCT=to_naked
+			AUTO_MODE=0
 			;;
 		p|P)
 			FUNCT=to_hp
+			AUTO_MODE=0
 			;;
 		s|S)
 			FUNCT=to_solaris
+			AUTO_MODE=0
 			;;
 		w|W)
 			FUNCT=to_windows
+			AUTO_MODE=0
 			;;
 		i|I)
 			INT_LOOKUP=1
