@@ -33,6 +33,7 @@ Usage: [STDIN] | $0 [OPTIONS]... [MAC-ADDRESSES]...
 	-w	Windows style - lowercase ('ma-ca-dd-re-ss-es')
 	-W	Windows style - UPPERCASE ('MA-CA-DD-RE-SS-ES')
 	-x,-X	'Exclude' mode (filters out things like global broadcast)
+	-3	H3C style - lowercare ('maca-ddre-sses')
 "
 
 # HELP2 - 'extended' help text
@@ -64,7 +65,7 @@ Notes:
 function to_cisco
 {
 	# Cisco-style: maca.ddre.sses (always lowercase)
-	sed 's/..../\L&\./g;s/\.$//'
+	sed 's/..../&\./g;s/\.$//'
 }
 
 function to_linux
@@ -99,6 +100,12 @@ function to_solaris
 function to_binary
 {
 	bc <<< "obase=2; ibase=16; $(cat - | to_naked | tr [a-z] [A-Z])" | zfill 48
+}
+
+function to_h3c
+{
+	# H3C-style: maca-ddre-sses (always lowercase)
+	sed 's/..../&\-/g;s/\-$//'
 }
 
 ######################### Define ARP_LOOKUP Functions #########################
@@ -272,7 +279,7 @@ function parse
 
 SHIFT=0
 
-while getopts "aAbBcChHiIlLnNoOpPrRsSwWxX" OPTION
+while getopts "aAbBcChHiIlLnNoOpPrRsSwWxX3" OPTION
 do
 	let SHIFT+=1
 	case "$OPTION" in
@@ -314,6 +321,10 @@ do
 			;;
 		r|R)
 			ARP_LOOKUP=1
+			;;
+		3)
+			FUNCT=to_h3c
+			AUTO_MODE=0
 			;;
 
 		## 'Normal' options
