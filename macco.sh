@@ -39,9 +39,9 @@ Usage: [STDIN] | $0 [OPTIONS]... [MAC-ADDRESSES]...
 
 HELP2="
 Notes: 
- - Automatic Mode converts to the 'default' format (as defined by "FUNCT"). 
+ - Automatic Mode converts to the 'default' format (as defined by 'FUNCT'). 
     If the supplied MAC is already in that format, it is converted to the 
-    'automatic' format (defined by "AUTO_FUNCT")
+    'automatic' format (defined by 'AUTO_FUNCT')
  - MAC address(es) can be supplied by STDIN, and/or script arguments.
     If both STDIN and arguments are supplied, STDIN is processed first.
  - Input from STDIN will be parsed for MAC addresses (that is, the script will
@@ -394,6 +394,7 @@ then
 elif [[ -t 0 ]]
 then
 	[[ -n $ORIG_FUNCT ]] && FUNCT="$ORIG_FUNCT"
+	AUTO_MODE=0
 	ip link | awk '/LOOPBACK/ {getline;next} {printf $2 "\t";getline;print $2}' | while read iface mac
 	do
 		[[ -n "$mac" ]] && echo -e "$iface\t$(echo -e "$mac" | parse)"
